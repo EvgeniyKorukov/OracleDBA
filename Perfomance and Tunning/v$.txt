@@ -1,0 +1,16 @@
+# Events for session
+v$session_event 
+
+
+# Waits for session
+v$session_wait
+
+# Statistic name
+v$statname
+
+# Statistic by session
+v$sesstat
+
+
+# Statistic by system
+
