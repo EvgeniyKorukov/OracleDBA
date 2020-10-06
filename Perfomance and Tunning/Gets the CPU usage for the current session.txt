@@ -1,0 +1,11 @@
+/* Gets the CPU usage for the current session */
+
+
+select 
+SID,
+'CPU' TIMESOURCE,
+(VALUE/100) seconds 
+from v$sesstat 
+where 
+sid=(SELECT sid from v$session where audsid=USERENV('SESSIONID'))
+and statistic#=(select statistic# from v$statname where name='CPU used by this session');

@@ -1,0 +1,3 @@
+TKPROF command:
+
+tkprof tracefile.txt tkprofout.txt waits=yes "sort=(PRSELA,EXEELA,FCHELA)" SYS=NO

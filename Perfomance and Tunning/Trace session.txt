@@ -1,0 +1,7 @@
+To start trace:
+
+execute sys.dbms_system.set_ev(12,23,10046,8,’’);
+
+To end trace:
+
+execute sys.dbms_system.set_ev(12,23,10046,0,’’);

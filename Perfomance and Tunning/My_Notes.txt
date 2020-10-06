@@ -1,0 +1,7 @@
+Get waits from V$SESSION_EVENT
+
+Get CPU from V$SESSTAT 
+
+Elapsed time – end time minus start time
+CPU time plus wait time should equal elapsed time – but doesn’t always
+

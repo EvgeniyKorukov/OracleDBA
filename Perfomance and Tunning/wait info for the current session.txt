@@ -1,0 +1,10 @@
+/* wait info for the current session */
+
+
+select 
+SID,
+event TIMESOURCE,
+(TIME_WAITED/100) seconds 
+from v$session_event 
+where 
+sid=(SELECT sid from v$session where audsid=USERENV('SESSIONID'));
