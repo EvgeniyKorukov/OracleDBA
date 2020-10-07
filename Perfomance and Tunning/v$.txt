@@ -14,3 +14,24 @@ v$sesstat
 
 # Statistic by system
 
+
+
+V$SESSION_EVENT
+V$SESSION_EVENT—that shows the details of all the wait events the session has ever waited for. Here are the important columns in that view:
+	SID: the session ID
+	EVENT: the name of the wait event experienced by the session
+	TOTAL_WAITS: the total number of times the session had to wait for that wait event
+	TIME_WAITED: the total length of time the session had to wait for that event, recorded in cs (centiseconds [hundredths of a second])
+	AVERAGE_WAIT: the average length of time (also in cs) the session waited for that event
+	MAX_WAIT: the maximum length of time (in cs) the session waited for that event
+	The “Max Wait (ms)” column shows the maximum time the session had to wait for one occurrence of this event. The value here is 9,619 ms, and because the total wait time was 9,620 ms, it appears that the session waited 9,619 ms on one occasion, leaving a 1 ms combined total for the other 19 occasions—a very small wait each time. Considering the single incidence of a large wait, this event should not be a general cause of concern. On the other hand, had you seen a maximum time close to the average time, you could surmise that all occurrences had to wait about the same amount of time. In such a case, reducing the time for this event would likely apply uniformly to all occurrences and consequently reduce the overall elapsed time.
+
+On the other hand, had you seen a maximum time close to the average time, you could surmise that all occurrences had to wait about the same amount of time. In such a case, reducing the time for this event would likely apply uniformly to all occurrences and consequently reduce the overall elapsed time.
+Although the V$SESSION_EVENT view shows what the session waited for earlier, it doesn’t show when. That information is visible in another view—V$ACTIVE_SESSION_HISTORY (part of the extra-cost Oracle Diagnostics Pack)—which is beyond the scope of this article
+
+When the root of the problem is that the session is consuming too much CPU, you should look at resource consumption—not the events waited for—by a session. Fortunately, finding that information is quite simple: it’s visible in a view named V$SESSTAT, which has three columns:
+	SID: the session ID
+	STATISTIC#: the ID of the statistic being captured (You can get the name of the statistic from the NAME column in another view—V$STATNAME—by using this ID.)
+	VALUE: the value of the statistic
+	
+	

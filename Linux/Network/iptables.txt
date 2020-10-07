@@ -1,0 +1,5 @@
+#Now I simulate a client that doesn’t answer, by blocking the input packets :
+	iptables -I INPUT 1 -p tcp --dport 36316 -j DROP
+
+#remove my iptables rule to stop blocking the packets:
+	host sudo iptables -D INPUT 1

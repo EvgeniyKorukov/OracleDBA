@@ -1,0 +1,10 @@
+# Finding process
+	netstat -np  | grep sqlplus
+
+#Finding network activity from process 36316
+	netstat -np  | grep 36316
+
+“netstat -np | grep sqlplus” finds the client connection in order to get the port and “netstat -np | grep $port” shows both connections (“sqlplus” for the client and “oracleSID” for the server).
+
+
+
