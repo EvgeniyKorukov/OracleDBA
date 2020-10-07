@@ -1,0 +1,7 @@
+SWAP
+
+#Swap usage by each process could be found out by using the command "top" then pressing "O" then selecting "P: SWAP = Swapped size (kb)" from the given options. The processes will be sorted out based on the swap usage.
+Latest version of top v3.3.3 does not have the "O" option.
+
+
+

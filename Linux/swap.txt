@@ -1,0 +1,242 @@
+#find out which processes using swap
+
+You will see the swap usage of each process sorted by the highes amount of swap usage.
+	for file in /proc/*/status ; do awk '/VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; done | sort -k 2 -n -r
+
+
+In order to find out which processes remain within Swap, run this:
+	grep VmSwap /proc/*/status | egrep -v "0 kB"
+
+
+#If you want the Linux virtual memory manager (which is responsible for the decision if and which processes are moved to Swap) to be more or less agressive, tune the vm.swappiness kernel parameter via sysctl:
+	sudo sysctl vm.swappiness 0 # Linux will only use swap if *no* other memory is available
+	sudo sysctl vm.swappiness 1 # Linux will try to avoid swap whenever possible
+The default value of the swappiness parameter is 60.
+
+
+# the simple script below calculates the total swap usage of the process which PID = 1027:
+	echo $((`grep Swap /proc/1027/smaps | awk '{ print $2; }' | tr '\n' '+'`0))
+
+
+#Display processes using swap space. This list will be sorted by process id by default/
+	find /proc -maxdepth 2 -path "/proc/[0-9]*/status" -readable -exec awk -v FS=":" '{process[$1]=$2;sub(/^[ \t]+/,"",process[$1]);} END {if(process["VmSwap"] && process["VmSwap"] != "0 kB") printf "%10s %-30s %20s\n",process["Pid"],process["Name"],process["VmSwap"]}' '{}' \;
+	
+
+#Display processes using swap space sorted by used space
+	find /proc -maxdepth 2 -path "/proc/[0-9]*/status" -readable -exec awk -v FS=":" '{process[$1]=$2;sub(/^[ \t]+/,"",process[$1]);} END {if(process["VmSwap"] && process["VmSwap"] != "0 kB") printf "%10s %-30s %20s\n",process["Pid"],process["Name"],process["VmSwap"]}' '{}' \; | awk '{print $(NF-1),$0}' | sort -h | cut -d " " -f2-
+	
+
+#Display top ten processes using swap space
+	find /proc -maxdepth 2 -path "/proc/[0-9]*/status" -readable -exec awk -v FS=":" '{process[$1]=$2;sub(/^[ \t]+/,"",process[$1]);} END {if(process["VmSwap"] && process["VmSwap"] != "0 kB") printf "%10s %-30s %20s\n",process["Pid"],process["Name"],process["VmSwap"]}' '{}' \; | awk '{print $(NF-1),$0}' | sort -hr | head | cut -d " " -f2- 
+	
+
+#Display top ten processes using swap space with percentage values. Read (see 1st command) or calculate (see 2nd command) total available swap space to calculate and display per process percentage swap usage. Both of these commands are equivalent.
+	find /proc -maxdepth 2 -path "/proc/[0-9]*/status" -readable -exec awk -v FS=":" -v TOTSWP="$(cat /proc/meminfo | sed  -n -e "s/^SwapTotal:[ ]*\([0-9]*\) kB/\1/p")" '{process[$1]=$2;sub(/^[ \t]+/,"",process[$1]);} END {if(process["VmSwap"] && process["VmSwap"] != "0 kB") {used_swap=process["VmSwap"];sub(/[ a-zA-Z]+/,"",used_swap);percent=(used_swap/TOTSWP*100); printf "%10s %-30s %20s %6.2f%\n",process["Pid"],process["Name"],process["VmSwap"],percent} }' '{}' \;  | awk '{print $(NF-2),$0}' | sort -hr | head | cut -d " " -f2-
+	find /proc -maxdepth 2 -path "/proc/[0-9]*/status" -readable -exec awk -v FS=":" -v TOTSWP="$(cat /proc/swaps | sed 1d | awk 'BEGIN{sum=0} {sum=sum+$(NF-2)} END{print sum}')" '{process[$1]=$2;sub(/^[ \t]+/,"",process[$1]);} END {if(process["VmSwap"] && process["VmSwap"] != "0 kB") {used_swap=process["VmSwap"];sub(/[ a-zA-Z]+/,"",used_swap);percent=(used_swap/TOTSWP*100); printf "%10s %-30s %20s %6.2f%\n",process["Pid"],process["Name"],process["VmSwap"],percent} }' '{}' \;  | awk '{print $(NF-2),$0}' | sort -hr | head | cut -d " " -f2-
+
+
+#Find Out What Is Using Your Swap
+http://northernmost.org/blog/find-out-what-is-using-your-swap/
+		#!/bin/bash
+		# Get current swap usage for all running processes
+		# Erik Ljungstrom 27/05/2011
+		SUM=0
+		OVERALL=0
+		for DIR in `find /proc/ -maxdepth 1 -type d | egrep "^/proc/[0-9]"` ; do
+				PID=`echo $DIR | cut -d / -f 3`
+				PROGNAME=`ps -p $PID -o comm --no-headers`
+				for SWAP in `grep Swap $DIR/smaps 2>/dev/null| awk '{ print $2 }'`
+				do
+						let SUM=$SUM+$SWAP
+				done
+				echo "PID=$PID - Swap used: $SUM - ($PROGNAME )"
+				let OVERALL=$OVERALL+$SUM
+				SUM=0
+
+		done
+		echo "Overall swap used: $OVERALL"
+	./getswap.sh | sort -n -k 5
+	./getswap.sh  | egrep -v "Swap used: 0" |sort -n -k 5
+
+
+#Swap usage by each process could be found out by using the command "top" then pressing "O" then selecting "P: SWAP = Swapped size (kb)" from the given options. The processes will be sorted out based on the swap usage.
+Latest version of top v3.3.3 does not have the "O" option.	
+
+
+#How can I know which process is using swap?
+[a] /proc/meminfo - This file reports statistics about memory usage on the system. It is used by free to report the amount of free and used memory (both physical and swap) on the system as well as the shared memory and buffers used by the kernel. You can also use free, vmstat and other tools to find out the same information.
+[b] /proc/${PID}/smaps, /proc/${PID}/status, and /proc/${PID}/stat : Use these files to find information about memory, pages and swap used by each process using its PID.
+[c] smem - This command (python script) reports memory usage with shared memory divided proportionally.
+		#!/bin/bash
+		# Get current swap usage for all running processes
+		# Erik Ljungstrom 27/05/2011
+		SUM=0
+		OVERALL=0
+		for DIR in `find /proc/ -maxdepth 1 -type d | egrep "^/proc/[0-9]"` ; do
+		PID=`echo $DIR | cut -d / -f 3`
+		PROGNAME=`ps -p $PID -o comm --no-headers`
+		for SWAP in `grep Swap $DIR/smaps 2>/dev/null| awk '{ print $2 }'`
+		do
+		let SUM=$SUM+$SWAP
+		done
+		echo "PID=$PID - Swap used: $SUM - ($PROGNAME )"
+		let OVERALL=$OVERALL+$SUM
+		SUM=0
+
+		done
+		echo "Overall swap used: $OVERALL"
+	(echo "COMM PID SWAP"; for file in /proc/*/status ; do awk '/^Pid|VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; done | grep kB | grep -wv "0 kB" | sort -k 3 -n -r) | column -t
+	
+	
+#With this command you can list all process that are using swap.
+	http://www.cyberciti.biz/faq/linux-which-process-is-using-swap/
+		for file in /proc/*/status ; 
+		do 
+		awk '/VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; 
+		done
+
+
+#My take on using awk to output a nice table sorted by swap usage:
+	awk 'function pr(){if (s ~ /^[1-9]/) print p,n,s;n="";p="";s=""}BEGIN{FS="\t *";OFS="\t"}/^Name:/{pr();n=$2}/^VmSwap:/{s=$2}/^Pid:/{p=$2}END{pr()}' /proc/*/status | sort -t $'\t' -k3 -n -r | column -t -s $'\t'
+
+
+http://northernmost.org/blog/find-out-what-is-using-your-swap/
+		Here's one variant of the script and no root needed:
+
+		#!/bin/bash 
+		# Get current swap usage for all running processes
+		# Erik Ljungstrom 27/05/2011
+		# Modified by Mikko Rantalainen 2012-08-09
+		# Pipe the output to "sort -nk3" to get sorted output
+		# Modified by Marc Methot 2014-09-18
+		# removed the need for sudo
+
+		SUM=0
+		OVERALL=0
+		for DIR in `find /proc/ -maxdepth 1 -type d -regex "^/proc/[0-9]+"`
+		do
+			PID=`echo $DIR | cut -d / -f 3`
+			PROGNAME=`ps -p $PID -o comm --no-headers`
+			for SWAP in `grep VmSwap $DIR/status 2>/dev/null | awk '{ print $2 }'`
+			do
+				let SUM=$SUM+$SWAP
+			done
+			if (( $SUM > 0 )); then
+				echo "PID=$PID swapped $SUM KB ($PROGNAME)"
+			fi
+			let OVERALL=$OVERALL+$SUM
+			SUM=0
+		done
+		echo "Overall swap used: $OVERALL KB"
+
+
+#Here's another variant of the script, but meant to give more readable output (you need to run this as root to get exact results):
+		#!/bin/bash
+
+			# find-out-what-is-using-your-swap.sh
+			# -- Get current swap usage for all running processes
+			# --
+			# -- rev.0.3, 2012-09-03, Jan Smid          - alignment and intendation, sorting
+			# -- rev.0.2, 2012-08-09, Mikko Rantalainen - pipe the output to "sort -nk3" to get sorted output
+			# -- rev.0.1, 2011-05-27, Erik Ljungstrom   - initial version
+
+
+		SCRIPT_NAME=`basename $0`;
+		SORT="kb";                 # {pid|kB|name} as first parameter, [default: kb]
+		[ "$1" != "" ] && { SORT="$1"; }
+
+		[ ! -x `which mktemp` ] && { echo "ERROR: mktemp is not available!"; exit; }
+		MKTEMP=`which mktemp`;
+		TMP=`${MKTEMP} -d`;
+		[ ! -d "${TMP}" ] && { echo "ERROR: unable to create temp dir!"; exit; }
+
+		>${TMP}/${SCRIPT_NAME}.pid;
+		>${TMP}/${SCRIPT_NAME}.kb;
+		>${TMP}/${SCRIPT_NAME}.name;
+
+		SUM=0;
+		OVERALL=0;
+			echo "${OVERALL}" > ${TMP}/${SCRIPT_NAME}.overal;
+
+		for DIR in `find /proc/ -maxdepth 1 -type d -regex "^/proc/[0-9]+"`;
+		do
+			PID=`echo $DIR | cut -d / -f 3`
+			PROGNAME=`ps -p $PID -o comm --no-headers`
+
+			for SWAP in `grep Swap $DIR/smaps 2>/dev/null| awk '{ print $2 }'`
+			do
+				let SUM=$SUM+$SWAP
+			done
+
+			if (( $SUM > 0 ));
+			then
+				echo -n ".";
+				echo -e "${PID}\t${SUM}\t${PROGNAME}" >> ${TMP}/${SCRIPT_NAME}.pid;
+				echo -e "${SUM}\t${PID}\t${PROGNAME}" >> ${TMP}/${SCRIPT_NAME}.kb;
+				echo -e "${PROGNAME}\t${SUM}\t${PID}" >> ${TMP}/${SCRIPT_NAME}.name;
+			fi
+			let OVERALL=$OVERALL+$SUM
+			SUM=0
+		done
+		echo "${OVERALL}" > ${TMP}/${SCRIPT_NAME}.overal;
+		echo;
+		echo "Overall swap used: ${OVERALL} kB";
+		echo "========================================";
+		case "${SORT}" in
+			name )
+				echo -e "name\tkB\tpid";
+				echo "========================================";
+				cat ${TMP}/${SCRIPT_NAME}.name|sort -r;
+				;;
+
+			kb )
+				echo -e "kB\tpid\tname";
+				echo "========================================";
+				cat ${TMP}/${SCRIPT_NAME}.kb|sort -rh;
+				;;
+
+			pid | * )
+				echo -e "pid\tkB\tname";
+				echo "========================================";
+				cat ${TMP}/${SCRIPT_NAME}.pid|sort -rh;
+				;;
+		esac
+		rm -fR "${TMP}/";
+
+
+http://www.cyberciti.biz/faq/linux-which-process-is-using-swap/
+
+
+#Another script variant avoiding the loop in shell:
+		#!/bin/bash
+		grep VmSwap /proc/[0-9]*/status | awk -F':' -v sort="$1" '
+		  {
+			split($1,pid,"/") # Split first field on /
+			split($3,swp," ") # Split third field on space
+			cmdlinefile = "/proc/"pid[3]"/cmdline" # Build the cmdline filepath
+			getline pname[pid[3]] < cmdlinefile # Get the command line from pid
+			swap[pid[3]] = sprintf("%6i %s",swp[1],swp[2]) # Store the swap used (with unit to avoid rebuilding at print)
+			sum+=swp[1] # Sum the swap
+		  }
+		  END {
+			OFS="\t" # Change the output separator to tabulation
+			print "Pid","Swap used","Command line" # Print header
+			if(sort) {
+			  getline max_pid < "/proc/sys/kernel/pid_max"
+			  for(p=1;p<=max_pid;p++) {
+				if(p in pname) print p,swap[p],pname[p] # print the values
+			  }
+			} else {
+			  for(p in pname) { # Loop over all pids found
+				print p,swap[p],pname[p] # print the values
+			  }
+			}
+			print "Total swap used:",sum # print the sum
+		  }'
+
+
+https://stackoverflow.com/questions/479953/how-to-find-out-which-processes-are-using-swap-space-in-linux
+https://www.cyberciti.biz/faq/linux-which-process-is-using-swap/
+https://www.cyberciti.biz/faq/linux-check-swap-usage-command/
+
+
