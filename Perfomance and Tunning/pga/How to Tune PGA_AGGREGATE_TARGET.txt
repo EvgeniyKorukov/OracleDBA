@@ -13,3 +13,6 @@ To tune PGA_AGGREGATE_TARGET:
 	If more PGA memory is required, then increase PGA memory by either reducing memory from SGA components or adding more physical memory to the system.
 	At any time, ensure the number of optimal, one-pass, and multi-pass work area executions matches predictions and tune the value of the PGA_AGGREGATE_TARGET parameter if necessary.
 	Use the V$SYSSTAT and V$SESSTAT views to verify the total number of work areas executed with optimal, one-pass, and multi-pass memory size since instance or session startup, respectively, as described in "Using the V$SYSSTAT and V$SESSTAT Views".
+	
+	
+	
