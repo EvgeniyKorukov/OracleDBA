@@ -1,0 +1,7 @@
+Excessive PGA usage can lead to high rates of swapping. When this occurs, the system may become unresponsive and unstable. In this case, consider using the PGA_AGGREGATE_LIMIT initialization parameter to limit overall PGA usage.
+
+By default, the PGA_AGGREGATE_LIMIT parameter is set to the greater of 2 GB, 200% of the PGA_AGGREGATE_TARGET value, or 3 MB times the value of the PROCESSES parameter. 
+
+However, it will not exceed 120% of the physical memory size minus the total SGA size. The default value is printed into the alert log. A warning message is printed in the alert log if the amount of physical memory on the system cannot be determined.
+
+

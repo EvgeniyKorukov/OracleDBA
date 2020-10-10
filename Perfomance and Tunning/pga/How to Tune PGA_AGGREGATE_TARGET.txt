@@ -1,0 +1,15 @@
+To tune PGA_AGGREGATE_TARGET:
+	Set the value of the PGA_AGGREGATE_TARGET parameter to avoid memory over-allocation.
+		Use the V$PGA_TARGET_ADVICE view to ensure that the PGA_AGGREGATE_TARGET value is not set within the over-allocation zone, as described in "Using the V$PGA_TARGET_ADVICE View". In Example 16–8, the PGA_AGGREGATE_TARGET value should be set to at least 375 MB.
+	Maximize the PGA cache hit percentage, based on response time requirements and memory constraints.
+		Use the V$PGA_TARGET_ADVICE view to determine the optimal value for the PGA_AGGREGATE_TARGET parameter and set its value to the optimal value, or to the maximum value possible, as described in "Using the V$PGA_TARGET_ADVICE View".
+	Assume a limit X on the memory that can be allocated to PGA:
+		If limit X is higher than the optimal value, set the value of the PGA_AGGREGATE_TARGET parameter to the optimal value.
+		In Example 16–8, if you have 10 GB to dedicate to PGA, set the value of the PGA_AGGREGATE_TARGET parameter to 3 GB and dedicate the remaining 7 GB to the SGA.
+		If limit X is less than the optimal value, set the value of the PGA_AGGREGATE_TARGET parameter to X.
+		In Example 16–8, if you have only 2 GB to dedicate to PGA, set the value of the PGA_AGGREGATE_TARGET parameter to 2 GB and accept a cache hit percentage of 75%.
+	Verify that the new value of the PGA_AGGREGATE_TARGET parameter will result in the desired number of optimal and one-pass work area executions and avoid any multi-pass work area executions.
+		Use the V$PGA_TARGET_ADVICE_HISTOGRAM view to predict the number of optimal, one-pass, and multi-pass work area executions, as described in "Using the V$PGA_TARGET_ADVICE_HISTOGRAM View".
+	If more PGA memory is required, then increase PGA memory by either reducing memory from SGA components or adding more physical memory to the system.
+	At any time, ensure the number of optimal, one-pass, and multi-pass work area executions matches predictions and tune the value of the PGA_AGGREGATE_TARGET parameter if necessary.
+	Use the V$SYSSTAT and V$SESSTAT views to verify the total number of work areas executed with optimal, one-pass, and multi-pass memory size since instance or session startup, respectively, as described in "Using the V$SYSSTAT and V$SESSTAT Views".

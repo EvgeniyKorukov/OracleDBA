@@ -1,0 +1,2 @@
+#Process max and current from v$pgastat
+	SELECT * FROM v$pgastat WHERE name in ('process count','max process count');

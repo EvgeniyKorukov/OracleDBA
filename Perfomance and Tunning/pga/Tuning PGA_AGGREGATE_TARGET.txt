@@ -1,0 +1,36 @@
+#To enable automatic generation of PGA performance advice views:
+	Set the PGA_AGGREGATE_TARGET parameter to enable automatic PGA memory management.
+		Setting this parameter to 0 disables automatic PGA memory management and is not recommended. For information about setting this parameter, see "Setting the Initial Value for PGA_AGGREGATE_TARGET".
+	Set the STATISTICS_LEVEL parameter to TYPICAL (the default) or ALL.
+		Setting this parameter to BASIC disables generation of the PGA performance advice views and is not recommended.
+		
+		
+#Using the V$PGA_TARGET_ADVICE View		
+	#The following example shows a query of this view (cache hit percentage and over allocation count)
+		SELECT ROUND(pga_target_for_estimate/1024/1024) target_mb,
+			   estd_pga_cache_hit_percentage cache_hit_perc,
+			   estd_overalloc_count
+		  FROM V$PGA_TARGET_ADVICE;
+
+		  
+#Using the V$PGA_TARGET_ADVICE_HISTOGRAM View
+	#shows a query of this view that displays the predicted content of the V$SQL_WORKAREA_HISTOGRAM view for a value of the PGA_AGGREGATE_TARGET parameter set to twice its current value.
+		SELECT low_optimal_size/1024 low_kb, (high_optimal_size+1)/1024 high_kb,
+			   estd_optimal_executions estd_opt_cnt,
+			   estd_onepass_executions estd_onepass_cnt,
+			   estd_multipasses_executions estd_mpass_cnt
+		  FROM V$PGA_TARGET_ADVICE_HISTOGRAM
+		 WHERE pga_target_factor = 2
+		   AND estd_total_executions != 0
+		 ORDER BY 1;		  
+		  
+
+#Using the V$SYSSTAT and V$SESSTAT Views
+	#query of the V$SYSSTAT view that displays the total number and the percentage of times work areas were executed in these three sizes since the instance was started:
+		SELECT name profile, cnt, DECODE(total, 0, 0, ROUND(cnt*100/total)) percentage
+		  FROM (SELECT name, value cnt, (SUM(value) over ()) total
+		  FROM V$SYSSTAT
+		 WHERE name
+		  LIKE 'workarea exec%');
+
+		  

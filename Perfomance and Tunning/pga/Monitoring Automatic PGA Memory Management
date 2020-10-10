@@ -1,0 +1,92 @@
+https://docs.oracle.com/database/121/TGDBA/tune_pga.htm#TGDBA469
+
+
+#The V$PGASTAT view provides instance-level statistics about PGA memory usage and the automatic PGA memory manager.
+	SELECT * FROM V$PGASTAT;
+
+	
+#The V$PROCESS view contains one row for each Oracle process connected to the database instance. Use the following columns in this view to monitor the PGA memory usage of these processes:	
+	SELECT program, pga_used_mem, pga_alloc_mem, pga_freeable_mem, pga_max_mem FROM V$PROCESS;
+	
+
+#The V$PROCESS_MEMORY view displays dynamic PGA memory usage by named component categories for each Oracle process. This view contains up to six rows for each Oracle process, one row for:
+	SELECT * FROM V$PROCESS_MEMORY;
+
+	
+#The V$SQL_WORKAREA_HISTOGRAM view shows the number of work areas executed with optimal, one-pass, and multi-pass memory size since instance startup. Statistics in this view are divided into buckets. The buckets are defined by the optimal memory requirements of the work areas. Each bucket is identified by a range of optimal memory requirements, specified by the values in the LOW_OPTIMAL_SIZE and HIGH_OPTIMAL_SIZE columns.	
+	SELECT * FROM V$SQL_WORKAREA_HISTOGRAM;
+
+
+#Querying the V$SQL_WORKAREA_HISTOGRAM View: Non-Empty Buckets
+	SELECT low_optimal_size/1024 low_kb,
+		   (high_optimal_size+1)/1024 high_kb,
+		   optimal_executions, onepass_executions, multipasses_executions
+	  FROM V$SQL_WORKAREA_HISTOGRAM
+	 WHERE total_executions != 0;		
+
+	
+#Querying the V$SQL_WORKAREA_HISTOGRAM View: Percent Optimal
+	The following query shows the percentage of times work areas are executed in optimal, one-pass, or multi-pass size since startup. This query only considers work areas of a certain size, with an optimal memory requirement of at least 64 KB:
+		SELECT optimal_count, ROUND(optimal_count*100/total, 2) optimal_perc, 
+			   onepass_count, ROUND(onepass_count*100/total, 2) onepass_perc,
+			   multipass_count, ROUND(multipass_count*100/total, 2) multipass_perc
+		FROM
+		 (SELECT DECODE(SUM(total_executions), 0, 1, SUM(total_executions)) total,
+				 SUM(optimal_executions) optimal_count,
+				 SUM(onepass_executions) onepass_count,
+				 SUM(multipass_executions) multipass_count
+			FROM V$SQL_WORKAREA_HISTOGRAM
+		   WHERE low_optimal_size >= 64*1024);	
+
+
+#The V$WORKAREA_ACTIVE view displays the work areas that are active (or executing) in the database instance. Small, active sort operations (under 64 KB) are excluded from this view. Use this view to precisely monitor the size of all active work areas and to determine whether these active work areas spill to a temporary segment.
+	SELECT TO_NUMBER(DECODE(sid, 65535, null, sid)) sid,
+		   operation_type operation,
+		   TRUNC(expected_size/1024) esize,
+		   TRUNC(actual_mem_used/1024) mem,
+		   TRUNC(max_mem_used/1024) "max mem",
+		   number_passes pass,
+		   TRUNC(TEMPSEG_SIZE/1024) tsize
+	  FROM V$SQL_WORKAREA_ACTIVE
+	 ORDER BY 1,2;
+
+
+#The following query finds the top 10 work areas that require the most cache memory:
+	SELECT *
+	FROM   (SELECT workarea_address, operation_type, policy, estimated_optimal_size
+			FROM V$SQL_WORKAREA
+			ORDER BY estimated_optimal_size DESC)
+	 WHERE ROWNUM <= 10;
+
+
+#The following query finds the cursors with one or more work areas that have been executed in one or multiple passes:
+	col sql_text format A80 wrap 
+	SELECT sql_text, sum(ONEPASS_EXECUTIONS) onepass_cnt,
+		   sum(MULTIPASSES_EXECUTIONS) mpass_cnt 
+	FROM V$SQL s, V$SQL_WORKAREA wa 
+	WHERE s.address = wa.address 
+	GROUP BY sql_text 
+	HAVING sum(ONEPASS_EXECUTIONS+MULTIPASSES_EXECUTIONS)>0;
+
+	
+#Using the hash value and address of a particular cursor, the following query displays the cursor execution plan, including information about the associated work areas:
+	col "O/1/M" format a10
+	col name format a20
+	SELECT operation, options, object_name name, trunc(bytes/1024/1024) "input(MB)",
+		   TRUNC(last_memory_used/1024) last_mem,
+		   TRUNC(estimated_optimal_size/1024) optimal_mem, 
+		   TRUNC(estimated_onepass_size/1024) onepass_mem, 
+		   DECODE(optimal_executions, null, null, 
+				  optimal_executions||'/'||onepass_executions||'/'||
+				  multipasses_executions) "O/1/M"
+	  FROM V$SQL_PLAN p, V$SQL_WORKAREA w 
+	 WHERE p.address=w.address(+) 
+	   AND p.hash_value=w.hash_value(+) 
+	   AND p.id=w.operation_id(+) 
+	   AND p.address='88BB460C'
+	   AND p.hash_value=3738161960; 
+
+
+
+
+	

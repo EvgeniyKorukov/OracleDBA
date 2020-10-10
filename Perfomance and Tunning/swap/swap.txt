@@ -1,0 +1,1 @@
+#Excessive PGA usage can lead to high rates of swapping

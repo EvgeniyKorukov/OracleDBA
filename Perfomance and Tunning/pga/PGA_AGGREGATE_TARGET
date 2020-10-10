@@ -1,0 +1,10 @@
+# Parameter - PGA_AGGREGATE_TARGET
+	The amount of PGA memory is set to the value of PGA_AGGREGATE_TARGET minus the amount of PGA memory allocated to other components of the system (such as PGA memory allocated by sessions)
+	Divide the remaining available memory between the SGA and the PGA:
+		For OLTP systems, the PGA memory typically makes up a small fraction of the available memory, leaving most of the remaining memory for the SGA.
+			Oracle recommends initially dedicating 20% of the available memory to the PGA, and 80% to the SGA. Therefore, the initial value of the PGA_AGGREGATE_TARGET parameter for an OLTP system can be calculated as:
+			PGA_AGGREGATE_TARGET = (total_mem * 0.8) * 0.2 where total_mem is the total amount of physical memory available on the system.
+		For DSS systems running large, memory-intensive queries, PGA memory can typically use up to 70% of the available memory.
+			Oracle recommends initially dedicating 50% of the available memory to the PGA, and 50% to the SGA. Therefore, the initial value of the PGA_AGGREGATE_TARGET parameter for a DSS system can be calculated as:
+			PGA_AGGREGATE_TARGET = (total_mem * 0.8) * 0.5 where total_mem is the total amount of physical memory available on the system.
+	

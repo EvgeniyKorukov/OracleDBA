@@ -1,0 +1,16 @@
+#Displays historical information about dynamic PGA memory usage by named component categories for each process.
+	DBA_HIST_PROCESS_MEM_SUMMARY
+		SNAP_ID - Unique snapshot ID
+		DBID - Database ID for the snapshot
+		INSTANCE_NUMBER - Instance number for the snapshot
+		CATEGORY - Category name. Categories include "SQL", "PL/SQL", "OLAP" and "JAVA". Special categories are "Freeable" and "Other". Freeable memory has been allocated to the process by the operating system, but has not been allocated to a category. "Other" memory has been allocated to a category, but not to one of the named categories
+		NUM_PROCESSES - Number of processes
+		NON_ZERO_ALLOCS - Number of processes with non-zero allocations
+		USED_TOTAL - Bytes of PGA memory used by the process for the category
+		ALLOCATED_TOTAL - Total number of bytes of PGA memory allocated by the process for the category.
+		ALLOCATED_AVG - Average number of bytes of PGA memory allocated by the process for the category
+		ALLOCATED_STDDEV - Standard deviation of the number of bytes of PGA memory allocated by the process for the category
+		ALLOCATED_MAX - Maximum bytes of PGA memory ever allocated by the process for the category
+		MAX_ALLOCATED_MAX - Maximum bytes of PGA memory that can be allocated by the process for the category
+	
+	
