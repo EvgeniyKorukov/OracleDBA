@@ -1,0 +1,48 @@
+
+#Setting in database
+	alter system set local_listener=TWCMS_LISTENER_LOCAL;
+	alter system set remote_listener=TWCMS_LISTENER_REMOTE;
+	
+#Check parameter
+	lsnrctl show valid_node_checking_registration LISTENER_TWCMS
+
+#Set parmeter	
+	lsnrctl set valid_node_checking_registration off LISTENER_TWCMS
+
+listener.ora
+	# For 10.20.73.45 and 10.20.73.20 and local_listener and remote_listener.
+	# It's for working with remote_listener and don't move ip-addresses after switchover
+	VALID_NODE_CHECKING_REGISTRATION_LISTENER_TWCMS=off
+
+tnsnames.ora
+	# Tns for Listener
+	TWCMS_LISTENER_LOCAL=
+	  (DESCRIPTION_LIST=
+		(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.20.73.122)(PORT=55873)))
+		(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.20.73.124)(PORT=42103)))
+		(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.20.73.45)(PORT=42103)))
+	  )
+
+	TWCMS_LISTENER_REMOTE=
+	  (DESCRIPTION_LIST=
+		(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.20.73.102)(PORT=55873)))
+		(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.20.73.104)(PORT=42103)))
+		(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.20.73.20)(PORT=42103)))
+	  )
+
+	  
+	  
+	TWCMS_LISTENER_LOCAL=
+	 (DESCRIPTION =
+		  (ADDRESS = (PROTOCOL = TCP)(HOST = 10.20.73.122)(PORT = 55873))
+		  (ADDRESS = (PROTOCOL = TCP)(HOST = 10.20.73.124)(PORT = 42103))
+		  (ADDRESS = (PROTOCOL = TCP)(HOST = 10.20.73.45)(PORT = 42103))
+	  )
+
+	TWCMS_LISTENER_REMOTE=
+	 (DESCRIPTION =
+		  (ADDRESS = (PROTOCOL = TCP)(HOST = 10.20.73.102)(PORT = 55873))
+		  (ADDRESS = (PROTOCOL = TCP)(HOST = 10.20.73.104)(PORT = 42103))
+		  (ADDRESS = (PROTOCOL = TCP)(HOST = 10.20.73.20)(PORT = 42103))
+	  )
+  

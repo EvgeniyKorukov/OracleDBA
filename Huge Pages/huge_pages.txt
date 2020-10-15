@@ -1,0 +1,78 @@
+# Size of RAM
+	free -m|grep Mem
+	
+# Size of page
+	cat /proc/meminfo | grep Hugepagesize	
+
+#Change /etc/sysctl.conf vm.nr_hugepages=19243
+	vi /etc/sysctl.conf
+		#HugePages-80% of RAM.
+		#RAM 48109 Mb; 80%-38487 Mb; (38487*1024)/2048(Hugepagesize)=19243
+		vm.nr_hugepages = 19243
+	# sysctl -p		
+	cat /proc/meminfo | grep -i page
+	
+#Change /etc/security/limits.conf 
+	vi /etc/security/limits.conf 
+		#RAM 48109 Mb; 80%-38487 Mb; 38487*1024=39410688 in Kb
+		oracle           soft    memlock         39410688
+		oracle           hard    memlock         39410688
+		oracle           soft    core            unlimited
+		oracle           hard    core            unlimited
+
+
+
+------------------------------------------------------------------------------------
+##Tunning Huge Pages
+	cat /proc/meminfo | grep -i page
+	Видим, что страница у нас 2048Кб (значение можно изменить параметром загрузки ядра bigpages=4100MB, например, в официальной доке не нашел, не пробовал). Из этого значения необходимо вычислить количество страниц, которое мы под большие страницы выделяем (для всего остального эта память будет недоступна сразу, всю память выделять не надо) и вписываем это значение в vm.nr_hugepages файла /etc/sysctl.conf. Например,
+		vm.nr_hugepages=21400
+	(это где-то для 43Гб при доступных 55Гб) для древних ядер этот параметр был недоступен (вместо него надо было использовать vm.hugetlb_pool).
+	выполняем sysctl -p, чтобы память выделилась.
+	Выделяем юзеру oracle память для блокировки в /etc/security/limits.conf
+		oracle soft core unlimited
+		oracle hard core unlimited
+		oracle soft memlock 54217728
+		oracle hard memlock 54217728
+	обратите внимание, что memlock в unlimited не выставляется. Почему - я не докопался. Перелогиньтесь.
+	Теперь переходим непосредственно к Oracle. Исхожу из того, что память у вас и так настроена (AMM с HugePages не совместимо на данный момент), поэтому настраиваем только большие страницы.
+		alter system set use_large_pages=only scope=spfile;
+		startup force;
+		если вы накосячили с какими-то параметрами, то база тупо не запустится. Можно выставить не only, а true и смотреть в алертлоге, используются большие страницы или нет. Мне было влом.
+	После всей процедуры попробуйте выполнить
+	cat /proc/meminfo | grep -i page
+		AnonPages:        235080 kB
+		PageTables:        22712 kB
+		AnonHugePages:         0 kB
+		HugePages_Total:   21400
+		HugePages_Free:     2534
+		HugePages_Rsvd:      527
+		HugePages_Surp:        0
+		Hugepagesize:       2048 kB
+		
+		
+------------------------------------
+	Configuring HugePages
+		# grep Huge /proc/meminfo
+			Hugepagesize:       2048 kB
+				Видим, что страница у нас 2048Кб
+		#Выделяем 90% от объема памяти. У нас RAM=1Tb, 90%-900Gb=(900*1024*1024)/2048(Hugepagesize)
+			vm.nr_hugepages=(900*1024*1024)/2048=460800
+		
+		#Меняем параметр vm.nr_hugepages=460800 в /etc/sysctl.conf
+			# sysctl -p		
+			
+			
+#HugePages-80% of RAM.
+#RAM 48109 Mb; 80%-38487 Mb; (38487*1024)/2048=19243
+vm.nr_hugepages = 19243
+			
+			
+	Выделяем юзеру oracle память для блокировки в /etc/security/limits.conf
+		oracle soft core unlimited
+		oracle hard core unlimited
+
+# RAM 48109 Mb; 80%-38487 Mb; 38487*1024=39410688 in Kb
+oracle           soft    memlock         39410688
+oracle           hard    memlock         39410688
+			
